@@ -1,79 +1,132 @@
-import random
 import time
 
+import math
 import pygame
+
+from gol import timeit, GoL
+from imgToGrid import pathToGrid
 
 pygame.init()
 pygame.font.init()
 
-DEPTH = 0
-ENABLE_TIMEIT = False
 
 # === Black/White ===
-# COLOR_MOUSE = (255, 0, 0)
-# COLOR_OFF = (20, 20, 20)
-# COLOR_ON = (255, 255, 255)
-# COLOR_BG = (0, 0, 0)
+COLOR_MOUSE = (255, 0, 0)
+COLOR_OFF = (00, 0, 0)
+COLOR_ON = (255, 255, 255)
+COLOR_BG = (0, 0, 0)
+COLOR_HIST = (255, 255, 255)
 
 
 # === Black/Green ===
-COLOR_MOUSE = (255, 128, 0)
-COLOR_OFF = (20, 20, 20)
-COLOR_ON = (0, 255, 0)
-COLOR_BG = (0, 0, 0)
+# COLOR_MOUSE = (255, 128, 0)
+# COLOR_OFF = (20, 20, 20)
+# COLOR_ON = (0, 255, 0)
+# COLOR_HIST = (255, 128, 128)
+# COLOR_BG = (0, 0, 0)
 
 
-def timeit(func):
-    def wrapped(*args, **kwargs):
-        global DEPTH
-        t1 = time.time()
-        DEPTH += 1
-        ret = func(*args, **kwargs)
-        DEPTH -= 1
-        t2 = time.time()
-        if ENABLE_TIMEIT:
-            print(f"[{t2:.20f}]{DEPTH * '  '}[{func.__name__}] Took {t2 - t1} seconds")
-        return ret
-
-    return wrapped
-
-
-class GoL:
-    def __init__(self, width, height, init=None):
+class GoLPygame(GoL):
+    def __init__(self, width, height, initBoard=None):
+        super().__init__(width, height, initBoard)
         size = (900, 900)
         self.canvas = pygame.display.set_mode(size, pygame.RESIZABLE)
         pygame.display.set_caption("Game of Life")
         assert isinstance(self.canvas, pygame.Surface)
-        self.width = width
-        self.height = height
         self.camTopLeft = [0, 0]
         self.camCellWidth = 10
         self.camZoomStep = 0.5
         self.camOldDrag = None
-        self.board = self.newBoard(random.random)
-        # self.board = self.newBoard()
-        self.simulate = True
+        self.simulate = False
         self.done = False
         self.latestManualTile = None
+        self.lastupdate = 0
 
         # Settings
         self.drawNeighbors = False
+        self.delay = 0.1
+        self.record = False
+        self.showHistory = False
+
+    @timeit
+    def updateCanvas(self):
+        # Clear board
+        self.canvas.fill(COLOR_BG)
+
+        # Draw cells
+        cw = self.camCellWidth
+        _, _, w, h = self.canvas.get_rect()
+        neighboursFont = pygame.font.SysFont('Arial', int(cw))
+        tlX, tlY = self.camTopLeft
+        minX = max(0, int(tlX))
+        minY = max(0, int(tlY))
+        maxX = min(int(minX + w / cw) + 2, self.width)
+        maxY = min(int(minY + h / cw) + 2, self.height)
+        # for x in range(minX, maxX):
+        #     for y in range(minY, maxY):
+        for x in range(0, maxX):
+            for y in range(0, maxY):
+                if self.board[x][y]:
+                    on = COLOR_ON
+                    off = COLOR_OFF
+                else:
+                    on = COLOR_OFF
+                    off = COLOR_ON
+                    if self.showHistory:
+                        on = [self.oldBoard[x][y] * COLOR_HIST[i] for i in range(3)]
+                curTlX, curTlY = (x - tlX) * cw, (y - tlY) * cw
+
+                pygame.draw.rect(self.canvas, on,
+                                 (curTlX, curTlY, cw, cw))
+
+                if self.drawNeighbors:
+                    nb = self.countNeighbours(x, y)
+                    if nb == 0:
+                        continue
+                    txt = neighboursFont.render(str(nb - self.board[x][y]), False, off)
+                    _, _, txtW, txtH = txt.get_rect()
+                    offsetX = (cw - txtW) / 2
+                    offsetY = (cw - txtH) / 2
+                    self.canvas.blit(txt, (curTlX + offsetX - 1, curTlY + offsetY - 1))
+
+        # Draw mouse position
+        x, y = pygame.mouse.get_pos()
+        boardX, boardY = self.screenToBoard(x, y)
+        if boardX is not None and boardY is not None:
+            curTlX, curTlY = (boardX - tlX) * cw, (boardY - tlY) * cw
+            pygame.draw.rect(self.canvas, COLOR_MOUSE, (curTlX - 1, curTlY - 1, cw - 2, cw - 2), 1)
+
+        # Draw Flags
+        if self.record:
+            print("Recording")
+
+        pygame.display.update()
+
+    def saveScreenshot(self):
+        pygame.image.save(self.canvas, "data/img.jpg")
 
     def start(self):
         while not self.done:
             # Events
-            self.eventHandling()
+            self._eventHandling()
 
             # Execution
-            if self.simulate:
+            if self.simulate and (time.time() - self.lastupdate) > self.delay:
+                self.lastupdate = time.time()
                 self.step()
 
             # Update
             self.updateCanvas()
+
+            # Record
+            if self.record:
+                self.saveScreenshot()
+
         pygame.quit()
 
-    # Event bindings
-    def eventHandling(self):
+        # Event bindings
+
+    def _eventHandling(self):
         for event in pygame.event.get():
             # print(event)
             if event.type == pygame.QUIT:
@@ -88,6 +141,8 @@ class GoL:
                 self.keyDown(event)
             elif event.type == pygame.KEYUP:
                 self.keyUp(event)
+            elif event.type == pygame.VIDEORESIZE:
+                self.resize(event)
 
     def mouseDown(self, event):
         x, y = event.pos
@@ -115,7 +170,9 @@ class GoL:
         pass
 
     def keyUp(self, event):
+        key = event.key
         c = chr(event.key)
+        print(c)
         if c == "p":  # Pause
             self.togglePause()
         elif c == "n":  # Toggle Numbers
@@ -124,8 +181,26 @@ class GoL:
             self.clearBoard()
         elif c == "q":
             pygame.quit()
+        elif c == "h":
+            self.showHistory = not self.showHistory
+        elif c == "s":
+            self.step()
+            self.updateCanvas()
+        elif c == "r":
+            self.initRandom()
+        elif c == "s":
+            self.record = not self.record
+        elif c == "]":  # Plus
+            self.adjustDelay(1 / math.sqrt(10))
+        elif c == "/":  # Minus
+            self.adjustDelay(math.sqrt(10))
 
-    # Other functions
+    def resize(self, event):
+        assert isinstance(self.canvas, pygame.Surface)
+        self.canvas = pygame.display.set_mode(event.size, pygame.RESIZABLE)
+
+        # Other functions
+
     def togglePause(self):
         self.simulate = not self.simulate
 
@@ -140,72 +215,9 @@ class GoL:
         after = self.screenToBoard(*pos)
         print(f"{before} ->  {after} ({self.camCellWidth})")
 
-    @timeit
-    def updateCanvas(self):
-        # Clear board
-        self.canvas.fill(COLOR_BG)
 
-        # Draw cells
-        cw = self.camCellWidth
-        _, _, w, h = self.canvas.get_rect()
-        neighborsFont = pygame.font.SysFont('Arial', int(cw))
-        tlX, tlY = self.camTopLeft
-        minX = max(0, int(tlX))
-        minY = max(0, int(tlY))
-        maxX = min(int(minX + w / cw) + 2, self.width)
-        maxY = min(int(minY + h / cw) + 2, self.height)
-        for x in range(minX, maxX):
-            for y in range(minY, maxY):
-                if self.board[x][y]:
-                    on = COLOR_ON
-                    off = COLOR_OFF
-                else:
-                    on = COLOR_OFF
-                    off = COLOR_ON
-                curTlX, curTlY = (x - tlX) * cw, (y - tlY) * cw
-                pygame.draw.rect(self.canvas, on,
-                                 (curTlX - 1, curTlY - 1, cw - 2, cw - 2))
-
-                if self.drawNeighbors:
-                    nb = self.countNeighbors(x, y)
-                    if nb == 0:
-                        continue
-                    txt = neighborsFont.render(str(nb - self.board[x][y]), False, off)
-                    _, _, txtW, txtH = txt.get_rect()
-                    offsetX = (cw - txtW) / 2
-                    offsetY = (cw - txtH) / 2
-                    self.canvas.blit(txt, (curTlX + offsetX - 1, curTlY + offsetY - 1))
-
-        # Draw mouse position
-        x, y = pygame.mouse.get_pos()
-        boardX, boardY = self.screenToBoard(x, y)
-        if boardX is not None and boardY is not None:
-            curTlX, curTlY = (boardX - tlX) * cw, (boardY - tlY) * cw
-            pygame.draw.rect(self.canvas, COLOR_MOUSE, (curTlX - 1, curTlY - 1, cw - 2, cw - 2), 1)
-
-        pygame.display.update()
-
-    @timeit
-    def step(self, n=1):
-        for i in range(n):
-            self._singlestep()
-
-    @timeit
-    def _singlestep(self):
-        def getValue(x, y):
-            neighbors = self.countNeighbors(x, y)
-            if neighbors == 3:
-                return 1
-            elif neighbors == 4:
-                return self.board[x][y]
-            else:
-                return 0
-
-        board = self.newBoard()
-        for x in range(self.width):
-            for y in range(self.height):
-                board[x][y] = getValue(x, y)
-        self.board = board
+    def adjustDelay(self, factor):
+        self.delay *= factor
 
     def toggleManual(self, screenX, screenY, newState=None):
         boardX, boardY = self.screenToBoard(screenX, screenY)
@@ -240,25 +252,12 @@ class GoL:
             y = None
         return x, y
 
-    def clearBoard(self):
-        self.board = self.newBoard()
-
-    def countNeighbors(self, x, y):
-        sum_ = 0
-        for i in range(3):
-            for ii in range(3):
-                try:
-                    sum_ += self.board[x + i - 1][y + ii - 1]
-                except IndexError:
-                    pass
-        return sum_
-
-    def newBoard(self, initValue: callable or int = 0):
-        if initValue in (0, 1):
-            return [[round(initValue) for _ in range(self.height)] for _ in range(self.width)]
-        return [[round(initValue()) for _ in range(self.height)] for _ in range(self.width)]
 
 
 if __name__ == '__main__':
-    gol = GoL(128, 64)
+    path = "data/imgs/golTitle.png"
+    size = (16, 9)
+    size = tuple([s * 30 for s in size])
+    grid = pathToGrid(path, size)
+    gol = GoLPygame(*size, initBoard=grid)
     gol.start()
