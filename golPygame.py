@@ -1,14 +1,13 @@
+import datetime
 import time
 
 import math
 import pygame
 
 from gol import timeit, GoL
-from imgToGrid import pathToGrid
 
 pygame.init()
 pygame.font.init()
-
 
 # === Black/White ===
 COLOR_MOUSE = (255, 0, 0)
@@ -27,8 +26,8 @@ COLOR_HIST = (255, 255, 255)
 
 
 class GoLPygame(GoL):
-    def __init__(self, width, height, initBoard=None):
-        super().__init__(width, height, initBoard)
+    def __init__(self, initBoard=None):
+        super().__init__(initBoard)
         size = (900, 900)
         self.canvas = pygame.display.set_mode(size, pygame.RESIZABLE)
         pygame.display.set_caption("Game of Life")
@@ -43,6 +42,7 @@ class GoLPygame(GoL):
         self.lastupdate = 0
 
         # Settings
+        self.boardName = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         self.drawNeighbors = False
         self.delay = 0.1
         self.record = False
@@ -66,7 +66,7 @@ class GoLPygame(GoL):
         #     for y in range(minY, maxY):
         for x in range(0, maxX):
             for y in range(0, maxY):
-                if self.board[x][y]:
+                if self.getXY(x, y):
                     on = COLOR_ON
                     off = COLOR_OFF
                 else:
@@ -83,7 +83,7 @@ class GoLPygame(GoL):
                     nb = self.countNeighbours(x, y)
                     if nb == 0:
                         continue
-                    txt = neighboursFont.render(str(nb - self.board[x][y]), False, off)
+                    txt = neighboursFont.render(str(nb - self.getXY(x, y)), False, off)
                     _, _, txtW, txtH = txt.get_rect()
                     offsetX = (cw - txtW) / 2
                     offsetY = (cw - txtH) / 2
@@ -188,8 +188,6 @@ class GoLPygame(GoL):
             self.updateCanvas()
         elif c == "r":
             self.initRandom()
-        elif c == "s":
-            self.record = not self.record
         elif c == "]":  # Plus
             self.adjustDelay(1 / math.sqrt(10))
         elif c == "/":  # Minus
@@ -215,7 +213,6 @@ class GoLPygame(GoL):
         after = self.screenToBoard(*pos)
         print(f"{before} ->  {after} ({self.camCellWidth})")
 
-
     def adjustDelay(self, factor):
         self.delay *= factor
 
@@ -225,8 +222,8 @@ class GoLPygame(GoL):
             if None in (boardX, boardY):
                 return
             if newState is None:
-                newState = 1 - self.board[boardX][boardY]  # Toggle
-            self.board[boardX][boardY] = int(newState)
+                newState = 1 - self.getXY(boardX, boardY)  # Toggle
+            self.setXY(boardX, boardY, int(newState))
 
             self.latestManualTile = (boardX, boardY)
 

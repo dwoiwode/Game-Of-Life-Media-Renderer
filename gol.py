@@ -1,11 +1,8 @@
 import random
 import time
 
-
-
 DEPTH = 0
 ENABLE_TIMEIT = False
-
 
 
 def timeit(func):
@@ -24,15 +21,22 @@ def timeit(func):
 
 
 class GoL:
-    def __init__(self, width, height, initBoard=None, countEdge=False):
-        self.width = width
-        self.height = height
+    def __init__(self, initBoard=None, countEdge=False):
+        self.width, self.height = len(initBoard), len(initBoard[0])
+
+        self.generation = 0
 
         self.oldBoard = self.newBoard(0)
         self.board = initBoard
         self.countEdge = countEdge
         if initBoard is None:
             self.initRandom()
+
+    def getXY(self, x, y):
+        return self.board[x][y]
+
+    def setXY(self, x, y, value):
+        self.board[x][y] = value
 
     @timeit
     def step(self, n=1):
@@ -46,7 +50,7 @@ class GoL:
             if neighbours == 3:
                 return 1
             elif neighbours == 4:
-                return self.board[x][y]
+                return self.getXY(x, y)
             else:
                 return 0
 
@@ -56,6 +60,8 @@ class GoL:
             for y in range(self.height):
                 board[x][y] = getValue(x, y)
                 self.oldBoard[x][y] = max(self.oldBoard[x][y] / 3 * 2, board[x][y])
+
+        self.generation += 1
         self.board = board
 
     def clearBoard(self):
@@ -87,5 +93,3 @@ class GoL:
     @classmethod
     def createRandomBoard(cls, width, height):
         return [[round(random.random()) for _ in range(height)] for _ in range(width)]
-
-
