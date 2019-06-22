@@ -4,6 +4,7 @@ import time
 import math
 import pygame
 
+import boardIO
 from gol import timeit, GoL
 
 pygame.init()
@@ -186,6 +187,8 @@ class GoLPygame(GoL):
         elif c == "s":
             self.step()
             self.updateCanvas()
+        elif c == "w":
+            boardIO.saveBoard(self.board, f"data/boards/saving/{self.boardName}_{self.generation:05d}")
         elif c == "r":
             self.initRandom()
         elif c == "]":  # Plus
@@ -250,11 +253,7 @@ class GoLPygame(GoL):
         return x, y
 
 
-
 if __name__ == '__main__':
-    path = "data/imgs/golTitle.png"
-    size = (16, 9)
-    size = tuple([s * 30 for s in size])
-    grid = pathToGrid(path, size)
-    gol = GoLPygame(*size, initBoard=grid)
+    board = boardIO.loadBoard("data/boards/Rules/birth1")
+    gol = GoLPygame(initBoard=board)
     gol.start()
