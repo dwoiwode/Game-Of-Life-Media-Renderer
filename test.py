@@ -63,5 +63,117 @@ class BoardIOTest(unittest.TestCase):
         self.assertTrue(boardIO.checkEquals(originalBoard, loadedBoard))
 
 
+class GoLRulesTest(unittest.TestCase):
+    def testSmallBoard(self):
+        board = [
+            [1, 1, 0, 1, 0],
+            [1, 0, 1, 0, 1],
+            [0, 0, 1, 0, 1],
+            [1, 1, 0, 1, 0],
+            [1, 0, 0, 0, 0],
+        ]
+
+        nextBoardValidated = [
+            [1, 1, 1, 1, 0],
+            [1, 0, 1, 0, 1],
+            [1, 0, 1, 0, 1],
+            [1, 1, 1, 1, 0],
+            [1, 1, 0, 0, 0]
+        ]
+        gol = GoL(initBoard=board)
+        gol.step()
+        nextBoard = gol.board
+        self.assertTrue(boardIO.checkEquals(nextBoard, nextBoardValidated))
+
+    def testMediumBoard(self):
+            board = boardIO.loadCompressedBoard(TEST_DIR + "mediumRulesTest")
+            validBoard1 = boardIO.loadCompressedBoard(TEST_DIR + "mediumRulesTestResult1")
+            validBoard21 = boardIO.loadCompressedBoard(TEST_DIR + "mediumRulesTestResult21")
+
+            gol = GoL(initBoard=board)
+            gol.step()
+            nextBoard = gol.board
+            self.assertTrue(boardIO.checkEquals(nextBoard, validBoard1))
+            gol.step(20)
+            nextBoard = gol.board
+            self.assertTrue(boardIO.checkEquals(nextBoard, validBoard21))
+
+    def test2Oszillator1(self):
+        board = [
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+        ]
+
+        gol = GoL(initBoard=board)
+        gol.step(2)
+        nextBoard = gol.board
+
+        self.assertTrue(boardIO.checkEquals(nextBoard, board))
+
+    def test2Oszillator2(self):
+        board = [
+            [1, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0],
+            [0, 0, 1, 1, 0],
+            [0, 0, 0, 0, 0],
+        ]
+
+        gol = GoL(initBoard=board)
+        gol.step(2)
+        nextBoard = gol.board
+
+        self.assertTrue(boardIO.checkEquals(nextBoard, board))
+
+    def test5Oszillator(self):
+        board = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+            [0, 0, 1, 0, 1, 1, 0, 1, 0, 0],
+            [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+            [0, 0, 1, 0, 1, 1, 0, 1, 0, 0],
+            [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+
+        gol = GoL(initBoard=board)
+        gol.step(5)
+        nextBoard = gol.board
+
+        self.assertTrue(boardIO.checkEquals(nextBoard, board))
+
+    def testStatic(self):
+        board = [
+            [1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+
+        gol = GoL(initBoard=board)
+        gol.step(100)
+        nextBoard = gol.board
+
+        self.assertTrue(boardIO.checkEquals(nextBoard, board))
+
+
 if __name__ == '__main__':
     unittest.main()

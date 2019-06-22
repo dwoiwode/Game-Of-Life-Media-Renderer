@@ -1,5 +1,6 @@
-import random
 import time
+
+import numpy as np
 
 DEPTH = 0
 ENABLE_TIMEIT = False
@@ -27,16 +28,16 @@ class GoL:
         self.generation = 0
 
         self.oldBoard = self.newBoard(0)
-        self.board = initBoard
+        self.board = np.asarray(initBoard)
         self.countEdge = countEdge
         if initBoard is None:
             self.initRandom()
 
     def getXY(self, x, y):
-        return self.board[x][y]
+        return self.board[x, y]
 
     def setXY(self, x, y, value):
-        self.board[x][y] = value
+        self.board[x, y] = value
 
     @timeit
     def step(self, n=1):
@@ -45,24 +46,16 @@ class GoL:
 
     @timeit
     def _singlestep(self):
-        def getValue(x, y):
-            neighbours = self.countNeighbours(x, y)
-            if neighbours == 3:
-                return 1
-            elif neighbours == 4:
-                return self.getXY(x, y)
-            else:
-                return 0
+        G = self.board.astype(int)
+        N = np.zeros_like(G)
+        G = np.pad(G, pad_width=1, mode='constant', constant_values=0)
+        N[:, :] = (G[:-2, :-2] + G[:-2, 1:-1] + G[:-2, 2:] +
+                   G[1:-1, :-2] + G[1:-1, 2:] +
+                   G[2:, :-2] + G[2:, 1:-1] + G[2:, 2:])
 
-        self.latestManualTile = None
-        board = self.newBoard()
-        for x in range(self.width):
-            for y in range(self.height):
-                board[x][y] = getValue(x, y)
-                self.oldBoard[x][y] = max(self.oldBoard[x][y] / 3 * 2, board[x][y])
+        self.board = np.logical_or(N == 3, np.logical_and(G[1:-1, 1:-1] == 1, N == 2))
 
         self.generation += 1
-        self.board = board
 
     def clearBoard(self):
         self.board = self.newBoard()
@@ -77,19 +70,17 @@ class GoL:
                     sum_ += self.countEdge
                     continue
                 try:
-                    sum_ += self.board[thisX][thisY]
+                    sum_ += self.getXY(thisX, thisY)
                 except IndexError:
                     sum_ += self.countEdge
         return sum_
 
-    def newBoard(self, initValue: callable or int = 0):
-        if initValue in (0, 1):
-            return [[round(initValue) for _ in range(self.height)] for _ in range(self.width)]
-        return [[round(initValue()) for _ in range(self.height)] for _ in range(self.width)]
+    def newBoard(self, initValue: int = 0):
+        return np.full((self.width, self.height), initValue)
 
     def initRandom(self):
         self.board = GoL.createRandomBoard(self.width, self.height)
 
     @classmethod
     def createRandomBoard(cls, width, height):
-        return [[round(random.random()) for _ in range(height)] for _ in range(width)]
+        return np.random.random_integers(0, 1, (width, height))

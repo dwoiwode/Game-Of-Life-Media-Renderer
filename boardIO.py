@@ -1,6 +1,5 @@
 from pathlib import Path
 import os
-from gol import timeit
 
 CHAR_ON = "X"
 CHAR_OFF = "_"
@@ -8,11 +7,10 @@ CHAR_DELIMITER = "\n"
 COMPRESSED_DIM_LEN = 3  # 3 => Maxsize = 256^3 - 1 = 16_777_215
 
 
-@timeit
 def saveBoard(board, filename):
     s = CHAR_DELIMITER.join(
         "".join(
-            CHAR_ON if getXY(x,y) else CHAR_OFF
+            CHAR_ON if board[x][y] else CHAR_OFF
             for x in range(len(board))
         )
         for y in range(len(board[0]))
@@ -22,7 +20,6 @@ def saveBoard(board, filename):
         d.write(CHAR_OFF+CHAR_ON+CHAR_DELIMITER)
         d.write(s)
 
-@timeit
 def loadBoard(filename):
     if not os.path.exists(filename):
         if os.path.exists(filename + ".board"):
@@ -44,10 +41,7 @@ def loadBoard(filename):
                 print(f"Invalid char at ({x},{y}): {data[x][y]}")
     return board
 
-@timeit
 def saveCompressedBoard(board, filename):
-    import time
-    t1 = time.time()
     # singleBinString = "".join("".join("1" if board[x][y] else "0" for x in range(len(board)) for y in range(len(board[0]))))
     singleBinString = "".join("".join("1" if board[x][y] else "0" for x in range(len(board))) for y in range(len(board[0])))
 
@@ -59,19 +53,13 @@ def saveCompressedBoard(board, filename):
     #         else:
     #             c = "0"
     #         singleBinString += c
-    t2 = time.time()
-    print(f"singleBinString Creation took {t2 - t1}s")
 
     singleBinString += (8 - len(singleBinString) % 8) * "0"
-    t1 = time.time()
     # s = "".join(chr(int(singleBinString[i * 8:(i + 1) * 8], 2)) for i in range(len(singleBinString) // 8))
     s = ""
     for i in range(len(singleBinString) // 8):
         s += chr(int(singleBinString[i * 8:(i + 1) * 8], 2))
-    t2 = time.time()
-    print(f"b took {t2 - t1}s")
 
-    t1 = time.time()
     os.makedirs(Path(filename).parent, exist_ok=True)
     with open(filename, "wb") as d:
         # print(f"Save: w,h: {len(board)}x{len(board[0])}")
@@ -81,10 +69,7 @@ def saveCompressedBoard(board, filename):
         d.write(w)
         d.write(h)
         d.write(s.encode("latin"))
-    t2 = time.time()
-    print(f"Writing file took {t2 - t1}s")
 
-@timeit
 def loadCompressedBoard(filename):
     def bytesToInt(bs):
         n = int.from_bytes(bs, byteorder="big", signed=False)
@@ -142,7 +127,6 @@ def loadCompressedBoard(filename):
     # board.append(row)
     return board
 
-@timeit
 def checkEquals(board1, board2):
     from sys import stderr
     if len(board1) != len(board2) or len(board1[0]) != len(board2[0]):
