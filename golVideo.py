@@ -140,7 +140,8 @@ COLORMAPS = {
     cv2.COLORMAP_WINTER: "Winter",
 }
 if __name__ == '__main__':
-    import boardIO
+    from utils import boardIO
+    import utils.colormaps as cm
 
     settings = {
         "generations": 8,

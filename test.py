@@ -2,7 +2,7 @@ import os
 import unittest
 from shutil import rmtree
 
-import boardIO
+from utils import boardIO
 from gol import GoL
 
 TEST_DIR = "data/tests/"

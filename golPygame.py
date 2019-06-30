@@ -4,7 +4,7 @@ import time
 import math
 import pygame
 
-import boardIO
+from utils import boardIO
 from gol import timeit, GoL
 
 pygame.init()

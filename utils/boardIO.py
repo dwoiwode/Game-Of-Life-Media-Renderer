@@ -128,16 +128,19 @@ def loadCompressedBoard(filename):
     return board
 
 def checkEquals(board1, board2):
-    from sys import stderr
-    if len(board1) != len(board2) or len(board1[0]) != len(board2[0]):
-        print(f"Invalid lengths! {len(board1)}x{len(board1[0])} != {len(board2)}x{len(board2[0])}", file=stderr)
-        return False
-    for y in range(len(board1[0])):
-        for x in range(len(board1)):
-            if board1[x][y] != board2[x][y]:
-                print(f"Field inconsistent at pos ({x},{y}): {board1[x][y]} != {board2[x][y]}", file=stderr)
-                return False
-    return True
+    # from sys import stderr
+    # if len(board1) != len(board2) or len(board1[0]) != len(board2[0]):
+    #     # print(f"Invalid lengths! {len(board1)}x{len(board1[0])} != {len(board2)}x{len(board2[0])}", file=stderr)
+    #     return False
+    # for y in range(len(board1[0])):
+    #     for x in range(len(board1)):
+    #         if board1[x][y] != board2[x][y]:
+    #             # print(f"Field inconsistent at pos ({x},{y}): {board1[x][y]} != {board2[x][y]}", file=stderr)
+    #             return False
+
+    return np.array_equal(board1, board2)
+    # return True
+import numpy as np
 
 
 if __name__ == '__main__':
