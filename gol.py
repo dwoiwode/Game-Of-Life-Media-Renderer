@@ -22,22 +22,31 @@ def timeit(func):
 
 
 class GoL:
-    def __init__(self, initBoard=None, countEdge=False):
+    def __init__(self, initBoard, countEdge=False):
         self.width, self.height = len(initBoard), len(initBoard[0])
 
         self.generation = 0
 
         self.oldBoard = self.newBoard(0)
         self.board = np.asarray(initBoard)
+        self._initialBoard = self.board
         self.countEdge = countEdge
         if initBoard is None:
             self.initRandom()
+
+        self.livingCells = property(self._countLivingCells)
+
+    def reset(self):
+        self.board = self._initialBoard
 
     def getXY(self, x, y):
         return self.board[x, y]
 
     def setXY(self, x, y, value):
         self.board[x, y] = value
+
+    def _countLivingCells(self):
+        return np.sum(self.board)
 
     @timeit
     def step(self, n=1):
@@ -82,5 +91,8 @@ class GoL:
         self.board = GoL.createRandomBoard(self.width, self.height)
 
     @classmethod
-    def createRandomBoard(cls, width, height):
-        return np.random.random_integers(0, 1, (width, height))
+    def createRandomBoard(cls, width, height, rndThreshold=0.5):
+        board = np.zeros((width, height))
+        rnd = np.random.random((width, height))
+        board[np.where(rnd < rndThreshold)] = 1
+        return board
