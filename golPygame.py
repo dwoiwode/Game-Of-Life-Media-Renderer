@@ -4,8 +4,9 @@ import time
 import math
 import pygame
 
-from utils import boardIO
+import utils.colormaps as cm
 from gol import timeit, GoL
+from utils import boardIO
 
 pygame.init()
 pygame.font.init()

@@ -7,6 +7,9 @@ COLORS_DARK = ["1771F1", "298A08", "FF6B00", "E20338", "761CEA"]
 COLORS_PASTELL = ['7777DD', '77DDDD', 'DD7777', 'DDDD77', '77DD77', 'DD77DD']
 COLORS_BASE = ['FF0000', 'FFFF00', '00FF00', '00FFFF', 'FF00FF', '0000FF']
 COLORS_BLACK_WHITE = ['000000', 'FFFFFF']
+COLORS_MARK = ['FF0000', '00FFFF', 'FF00FF', '0000FF']
+COLORS_MARK2 = ['8A086A', '28088a', '0a2e36',"c84c09","d00000"]
+COLORS_MARK3 = ['FF0000', '0000FF']
 
 
 def colorblock(color):
@@ -22,10 +25,14 @@ def colorize(img, colormap=None):
     return np.dstack(channels)
 
 
-def _htmlColor(color):
+def _htmlColor(color, rgb=False):
     color = color.lstrip("#")
     r1, r2, g1, g2, b1, b2 = color
+    if rgb:
+        return int(r1 + r2, 16), int(g1 + g2, 16), int(b1 + b2, 16)
+    # else bgr
     return int(b1 + b2, 16), int(g1 + g2, 16), int(r1 + r2, 16)
+
 
 
 def getColorMapBW():
@@ -47,7 +54,7 @@ def getColorMapFor(onColor="ffffff", offColor="000000"):
     rDif /= 255
     gDif /= 255
     bDif /= 255
-    c = [(offR + rDif * i, offG + gDif * i, offB + bDif * i) for i in range(256)]
+    c = [(int(offR + rDif * i+0.49), int(offG + gDif * i+0.49), int(offB + bDif * i+0.49)) for i in range(256)]
     return np.array(c, dtype="B")
 
 
@@ -86,18 +93,9 @@ def visualizeColormap(colormap, height=10, width=256):
     return cm
 
 
-class COLORMAPS:
-    BW = getColorMapBW(),
-    PastellGreen = getColorMapPastellGreen()
-
-
-if __name__ == '__main__':
-    for color in COLORS_DARK:
-        img = colorblock(_htmlColor(color))
-        cv2.imshow(color, img)
-        cv2.waitKey(1)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+COLORMAP_BLACK_WHITE = getColorMapBW()
+COLORMAP_BLACK_PASTELLGREEN = getColorMapPastellGreen()
+COLORMAP_WHITE_GREEN = getColorMapFor("298A08", "ffffff")
 
 
 class RandomColorProgressionIterator:
@@ -136,3 +134,12 @@ class RandomColorProgressionIterator:
         self.onColormap, self.offColormap = self.offColormap, self.onColormap
         self.latestOnColor, self.latestOffColor = self.latestOffColor, self.latestOnColor
         self.onIndex, self.offIndex = self.offIndex, self.onIndex
+
+
+if __name__ == '__main__':
+    for color in COLORS_PASTELL:
+        img = colorblock(_htmlColor(color))
+        cv2.imshow(color, img)
+        cv2.waitKey(1)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()

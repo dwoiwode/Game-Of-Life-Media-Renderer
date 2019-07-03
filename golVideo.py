@@ -1,10 +1,12 @@
 import os
+from pathlib import Path
 
 import cv2
 import numpy as np
 from tqdm import tqdm
 
 from gol import GoL
+import utils.colormaps as cm
 
 
 class GoLVideo(GoL):

@@ -1,5 +1,5 @@
-from pathlib import Path
 import os
+from pathlib import Path
 
 CHAR_ON = "X"
 CHAR_OFF = "_"
@@ -17,8 +17,9 @@ def saveBoard(board, filename):
     )
     os.makedirs(Path(filename).parent, exist_ok=True)
     with open(filename, "w") as d:
-        d.write(CHAR_OFF+CHAR_ON+CHAR_DELIMITER)
+        d.write(CHAR_OFF + CHAR_ON + CHAR_DELIMITER)
         d.write(s)
+
 
 def loadBoard(filename):
     if not os.path.exists(filename):
@@ -41,9 +42,11 @@ def loadBoard(filename):
                 print(f"Invalid char at ({x},{y}): {data[x][y]}")
     return board
 
+
 def saveCompressedBoard(board, filename):
     # singleBinString = "".join("".join("1" if board[x][y] else "0" for x in range(len(board)) for y in range(len(board[0]))))
-    singleBinString = "".join("".join("1" if board[x][y] else "0" for x in range(len(board))) for y in range(len(board[0])))
+    singleBinString = "".join(
+        "".join("1" if board[x][y] else "0" for x in range(len(board))) for y in range(len(board[0])))
 
     # singleBinString = ""
     # for y in range(len(board[0])):
@@ -70,11 +73,11 @@ def saveCompressedBoard(board, filename):
         d.write(h)
         d.write(s.encode("latin"))
 
+
 def loadCompressedBoard(filename):
     def bytesToInt(bs):
         n = int.from_bytes(bs, byteorder="big", signed=False)
         return n
-
 
     if not os.path.exists(filename):
         if os.path.exists(filename + ".boardC"):
@@ -127,6 +130,7 @@ def loadCompressedBoard(filename):
     # board.append(row)
     return board
 
+
 def checkEquals(board1, board2):
     # from sys import stderr
     # if len(board1) != len(board2) or len(board1[0]) != len(board2[0]):
@@ -140,18 +144,31 @@ def checkEquals(board1, board2):
 
     return np.array_equal(board1, board2)
     # return True
-import numpy as np
 
+
+def createRandomBoard(width, height, rndThreshold=0.5):
+    board = np.zeros((width, height))
+    rnd = np.random.random((width, height))
+    board[np.where(rnd < rndThreshold)] = 1
+    return board
+
+
+def emptyBoard(width, height):
+    return createRandomBoard(width, height, rndThreshold=0)
+
+
+import numpy as np
 
 if __name__ == '__main__':
     import gol
+
     gol.ENABLE_TIMEIT = True
 
     filename = "data/boards/test.board"
     filenameCompressed = "data/boards/test.boardC"
 
     print("Create Board")
-    originalBoard = gol.GoL.createRandomBoard(1500, 1500)
+    originalBoard = createRandomBoard(1500, 1500)
     # originalBoard = loadBoard(filename)
 
     print("Save Board")

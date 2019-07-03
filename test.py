@@ -25,7 +25,7 @@ class BoardIOTest(unittest.TestCase):
     def testNormalRandomSmall(self):
         filename = TEST_DIR + "small.board"
 
-        originalBoard = GoL.createRandomBoard(121, 106)
+        originalBoard = boardIO.createRandomBoard(121, 106)
         boardIO.saveBoard(originalBoard, filename)
         loadedBoard = boardIO.loadBoard(filename)
         self.assertTrue(boardIO.checkEquals(originalBoard, loadedBoard))
@@ -33,7 +33,7 @@ class BoardIOTest(unittest.TestCase):
     def testNormalRandomMedium(self):
         filename = TEST_DIR + "medium.board"
 
-        originalBoard = GoL.createRandomBoard(1500, 1751)
+        originalBoard = boardIO.createRandomBoard(1500, 1751)
         boardIO.saveBoard(originalBoard, filename)
         loadedBoard = boardIO.loadBoard(filename)
         self.assertTrue(boardIO.checkEquals(originalBoard, loadedBoard))
@@ -49,7 +49,7 @@ class BoardIOTest(unittest.TestCase):
     def testCompressedRandomSmall(self):
         filename = TEST_DIR + "small.boardC"
 
-        originalBoard = GoL.createRandomBoard(121, 106)
+        originalBoard = boardIO.createRandomBoard(121, 106)
         boardIO.saveCompressedBoard(originalBoard, filename)
         loadedBoard = boardIO.loadCompressedBoard(filename)
         self.assertTrue(boardIO.checkEquals(originalBoard, loadedBoard))
@@ -57,7 +57,7 @@ class BoardIOTest(unittest.TestCase):
     def testCompressedRandomMedium(self):
         filename = TEST_DIR + "medium.boardC"
 
-        originalBoard = GoL.createRandomBoard(1500, 1751)
+        originalBoard = boardIO.createRandomBoard(1500, 1751)
         boardIO.saveCompressedBoard(originalBoard, filename)
         loadedBoard = boardIO.loadCompressedBoard(filename)
         self.assertTrue(boardIO.checkEquals(originalBoard, loadedBoard))

@@ -2,6 +2,8 @@ import time
 
 import numpy as np
 
+from utils import boardIO
+
 DEPTH = 0
 ENABLE_TIMEIT = False
 
@@ -24,6 +26,7 @@ def timeit(func):
 class GoL:
     def __init__(self, initBoard, countEdge=False):
         self.width, self.height = len(initBoard), len(initBoard[0])
+        self.name = f"{self.width}x{self.height}"
 
         self.generation = 0
 
@@ -88,11 +91,4 @@ class GoL:
         return np.full((self.width, self.height), initValue)
 
     def initRandom(self):
-        self.board = GoL.createRandomBoard(self.width, self.height)
-
-    @classmethod
-    def createRandomBoard(cls, width, height, rndThreshold=0.5):
-        board = np.zeros((width, height))
-        rnd = np.random.random((width, height))
-        board[np.where(rnd < rndThreshold)] = 1
-        return board
+        self.board = boardIO.createRandomBoard(self.width, self.height)
