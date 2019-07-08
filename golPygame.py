@@ -34,7 +34,7 @@ class GoLPygame(GoL):
         self.canvas = pygame.display.set_mode(size, pygame.RESIZABLE)
         pygame.display.set_caption("Game of Life")
         assert isinstance(self.canvas, pygame.Surface)
-        self.camTopLeft = [0, 0]
+        self.camTopLeft = (0, 0)
         self.camCellWidth = max(size[0] / self.width, size[1] / self.height)
         self.neighboursFont = None
         self._updateNeighboursFont()
@@ -91,7 +91,7 @@ class GoLPygame(GoL):
                     nb = self.countNeighbours(x, y)
                     if nb == 0:
                         continue
-                    self.drawText(nb - self.getXY(x, y), x, y, off)
+                    self.drawText(int(nb - self.getXY(x, y)), x, y, off)
 
         # Draw mouse position
         x, y = pygame.mouse.get_pos()
@@ -119,7 +119,10 @@ class GoLPygame(GoL):
                 self.step()
 
             # Update
-            self.updateCanvas()
+            try:
+                self.updateCanvas()
+            except pygame.error:
+                pass
 
             # Record
             if self.record:
@@ -222,12 +225,18 @@ class GoLPygame(GoL):
 
     def zoom(self, event):
         pos = pygame.mouse.get_pos()
-        before = self.screenToBoard(*pos)
+
+        before = self.screenToBoard(*pos, withNegative=True)
+        tlX, tlY = self.camTopLeft
+        dX, dY = before[0] - tlX, before[1] - tlY
+        dX *= self.camCellWidth
+        dY *= self.camCellWidth
         self.camCellWidth *= 1 + (4.5 - event.button) * self.camZoomStep
+        dX /= self.camCellWidth
+        dY /= self.camCellWidth
+        self.camTopLeft = before[0] - dX,  before[1] - dY
+
         self._updateNeighboursFont()
-        pos = pygame.mouse.get_pos()
-        after = self.screenToBoard(*pos)
-        print(f"{before} ->  {after} ({self.camCellWidth})")
 
     def adjustDelay(self, factor):
         self.delay *= factor
@@ -263,7 +272,7 @@ class GoLPygame(GoL):
             dy = self.camOldDrag[1] - y
             tlX, tlY = self.camTopLeft
             scalefactor = 1 / self.camCellWidth
-            self.camTopLeft = [tlX + dx * scalefactor, tlY + dy * scalefactor]
+            self.camTopLeft = (tlX + dx * scalefactor, tlY + dy * scalefactor)
         self.camOldDrag = (x, y)
 
     def resetDrag(self):
@@ -274,13 +283,13 @@ class GoLPygame(GoL):
         self.latestManualTile = None
         self.simulate = self.isRunningBeforeDraw
 
-    def screenToBoard(self, screenX, screenY):
+    def screenToBoard(self, screenX, screenY, withNegative=False):
         tlX, tlY = self.camTopLeft
         cw = self.camCellWidth
         x, y = int(screenX / cw + tlX), int(screenY / cw + tlY)
-        if not (0 <= x < self.width):
+        if not (0 <= x < self.width) and not withNegative:
             x = None
-        if not (0 <= y < self.height):
+        if not (0 <= y < self.height) and not withNegative:
             y = None
         return x, y
 
