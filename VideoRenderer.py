@@ -8,48 +8,71 @@ from tqdm import tqdm
 
 import utils.colormaps as cm
 from gol import GoL
+from imageRenderer import RenderSettings, renderImage
 from utils import boardIO
 
 
 class GoLVideoRenderer:
-    def __init__(self, filename, videoWidth, videoHeight, fps=30, showNeighbourCount=False, showGridlines=False,
-                 colormap=None):
+    def __init__(self, filename, videoWidth, videoHeight, fps=30, fpg=1, showNeighbourCount=False, showGridlines=False,
+                 colormap=None, renderer=None):
         self.filename = filename
-        self.canvasWidth = int(videoWidth)
-        self.canvasHeight = int(videoHeight)
-        self.showNeighbours = showNeighbourCount
-        self.showGridlines = showGridlines
-        self.colormap = colormap
-        self.fps = fps
+        self.videoWidth = int(videoWidth)
+        self.videoHeight = int(videoHeight)
 
+        # Rendersettings
+        self.renderer = renderer if renderer is not None else renderImage
+        self.renderSettings = RenderSettings(self.videoWidth, self.videoHeight)
+        self.renderSettings.colormap = colormap
+        self.renderSettings.showNeighbours = showNeighbourCount
+        self.renderSettings.showGridlines = showGridlines
+        self.renderSettings.onColorIndex = 255
+        self.renderSettings.offColorIndex = 0
+
+        # Videosettings
+        self.fps = fps
+        self.fpg = fpg
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
         os.makedirs(Path(filename).parent, exist_ok=True)
-        self.vidOut = cv2.VideoWriter(self.filename, fourcc, self.fps, (self.canvasWidth, self.canvasHeight), isColor=1)
+        self.vidOut = cv2.VideoWriter(self.filename, fourcc, self.fps, (self.videoWidth, self.videoHeight), isColor=1)
         self.frameNo = 0
         self.oldImage = None
-
-        self.onColorIndex = 255
-        self.offColorIndex = 0
-
-        self.hightlights = []
-        self.texts = []
 
     def appendGoL(self, gol: GoL, maxGenerations=100,
                   tl=(0, 0), br=(-1, -1), preview=False, abortCondition=None, onColorChange=0, offColorChange=0,
                   **kwargs):
-        progressRange = tqdm(range(maxGenerations))
+
+        minTL, maxTL = tl
+        minBR, maxBR = br
+        try:
+            _, _ = minTL
+        except TypeError:
+            minTL = maxTL = tl
+
+        try:
+            _, _ = minBR
+        except TypeError:
+            minBR = maxBR = br
+
+        progressRange = tqdm(range(maxGenerations + 1))
         for i in progressRange:
-            img = self.renderImage(gol, tl=tl, br=br)
-            if preview:
-                cv2.imshow(self.filename, img)
-                cv2.setWindowTitle(self.filename, f"{self.filename} - Frame {self.frameNo}")
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    self.finish()
-                    break
+            for frameNo in range(self.fpg):
+                curTL = [min_tl + (max_tl - min_tl) / (maxGenerations * self.fpg) * ((i - 1) * self.fpg + frameNo) for
+                         min_tl, max_tl in zip(minTL, maxTL)]
+                curBR = [min_br + (max_br - min_br) / (maxGenerations * self.fpg) * ((i - 1) * self.fpg + frameNo) for
+                         min_br, max_br in zip(minBR, maxBR)]
+                self.renderSettings.topLeft = curTL
+                self.renderSettings.bottomRight = curBR
 
-            self.vidOut.write(img)
+                img = self.renderer(gol, self.renderSettings)
+                if preview:
+                    cv2.imshow(self.filename, img)
+                    cv2.setWindowTitle(self.filename, f"{self.filename} - Frame {self.frameNo}")
+                    if cv2.waitKey(1) & 0xFF == ord('q'):
+                        self.finish()
+                        break
+                self.vidOut.write(img)
 
-            self.frameNo += 1
+                self.frameNo += 1
 
             gol.step()
 
@@ -59,8 +82,8 @@ class GoLVideoRenderer:
 
             changeOnColor = (0.5 - random.random()) * 2 * onColorChange
             changeOffColor = (0.5 - random.random()) * 2 * offColorChange
-            self.onColorIndex = min(max(self.onColorIndex + changeOnColor, 128), 255)
-            self.offColorIndex = min(max(self.offColorIndex + changeOffColor, 0), 128)
+            self.renderSettings.onColorIndex = min(max(self.renderSettings.onColorIndex + changeOnColor, 128), 255)
+            self.renderSettings.offColorIndex = min(max(self.renderSettings.offColorIndex + changeOffColor, 0), 128)
 
     def __del__(self):
         self.finish()
@@ -68,84 +91,20 @@ class GoLVideoRenderer:
     def finish(self):
         self.vidOut.release()
 
-    def renderImage(self, gol: GoL, tl=(0, 0), br=(-1, -1)):
-        img = np.zeros((self.canvasHeight, self.canvasWidth), dtype="B")
-
-        xMin, yMin = tl
-        xMax, yMax = br
-        if xMax < 0:
-            xMax += gol.width
-        if yMax < 0:
-            yMax += gol.height
-
-        scaling = min(self.canvasWidth / (xMax - xMin + 1), self.canvasHeight / (yMax - yMin + 1))
-        lastX = 0
-
-        font = cv2.FONT_HERSHEY_PLAIN
-        textScaling = 0.05
-        if self.showNeighbours:
-            while max(cv2.getTextSize("0", font, textScaling, 1)[0]) < scaling * 0.9:
-                textScaling += 0.05
-
-        for x in range(xMin, xMax + 1):
-            nextX = int((x + 1 - xMin) * scaling)
-            lastY = 0
-            for y in range(yMin, yMax + 1):
-                nextY = int((y + 1 - yMin) * scaling)
-
-                grayValue = self.onColorIndex if gol.getXY(x, y) else self.offColorIndex
-                if self.showGridlines:
-                    cv2.rectangle(img, (lastX, lastY), (nextX, nextY), 255, 2)
-
-                cv2.rectangle(img, (lastX, lastY), (nextX, nextY), grayValue, -1)
-                lastY = nextY
-
-                if self.showNeighbours:
-                    nb = gol.countNeighbours(x, y)
-                    if nb == 0:
-                        continue
-                    textColor = [255 - grayValue for _ in range(3)]
-                    actualNeighbours = nb - gol.getXY(x, y)
-                    cv2.putText(img, str(actualNeighbours), (int(lastX + 0.05 * scaling), int(lastY - 0.05 * scaling)),
-                                font, textScaling, textColor, 1,
-                                cv2.LINE_AA)
-            lastX = nextX
-
-        coloredImg = cm.colorize(img, self.colormap)
-        for position, text, color in self.texts:
-            tmp1, tmp2 = position
-            x = int((tmp1 - xMin + 0.05) * scaling)
-            y = int((tmp2 - yMin + 0.95) * scaling)
-            cv2.putText(coloredImg, text, (x, y),
-                        font, textScaling, color, 1,
-                        cv2.LINE_AA)
-
-        for position, color in self.hightlights:
-            tmp1, tmp2 = position
-            try:
-                x1, y1 = tmp1
-                x2, y2 = tmp2
-                x1 = int((x1 - xMin) * scaling)
-                y1 = int((y1 - yMin) * scaling)
-                x2 = int((x2 - xMin) * scaling)
-                y2 = int((y2 - yMin) * scaling)
-            except:
-                x1 = int((tmp1 - xMin) * scaling)
-                y1 = int((tmp2 - yMin) * scaling)
-                x2 = int((tmp1 + 1 - xMin) * scaling)
-                y2 = int((tmp2 + 1 - yMin) * scaling)
-            cv2.rectangle(coloredImg, (x1, y1), (x2, y2), color, 4)
-        return coloredImg
-
     def addHighlight(self, position, color):
         if isinstance(color, str):
             color = cm._htmlColor(color)
-        self.hightlights.append((position, color))
+        self.renderSettings.highlights.append((position, color))
 
     def addText(self, position, text, color):
         if isinstance(color, str):
             color = cm._htmlColor(color)
-        self.texts.append((position, text, color))
+        self.renderSettings.texts.append((position, text, color))
+
+    def renderImage(self, gol: GoL):
+        if not isinstance(gol, GoL):
+            gol = GoL(gol)
+        return self.renderer(gol, self.renderSettings)
 
 
 class AbortDifHandler:
@@ -179,17 +138,16 @@ if __name__ == '__main__':
     vid = GoLVideoRenderer("data/videos/colorChangingLong3.avi", 1920, 1080, fps=24,
                            colormap=cm.getColorMapFor("298A08", "ffffff"))
 
-    vid.colormap = cm.RandomColorProgressionIterator(cm.COLORS_DARK, ["ffffff"])
-
-    c = cm.randomColormap(onColors=cm.COLORS_PASTELL, offColors=cm.COLORS_DARK)
+    # c = cm.randomColormap(onColors=cm.COLORS_PASTELL, offColors=cm.COLORS_DARK)
     # c = cm.randomColormap()
 
     goalFrames = 10 * 60 * vid.fps
+    k = 2
     while vid.frameNo < goalFrames:
+        vid.colormap = cm.RandomColorProgressionIterator(cm.COLORS_DARK, ["ffffff"])
         print(f"Current Frames: {vid.frameNo}. Goal: {goalFrames}")
         rndThresh = random.random() * 0.2 + 0.4  # range 0.4 - 0.6
         print(f"On Cells: ~{rndThresh * 100:.2f}%")
-        k = 3
         board = boardIO.createRandomBoard(192 * k, 108 * k, rndThreshold=rndThresh)
         gol = GoL(board)
         abort = AbortDifHandler(board, extendGenerations=150)
