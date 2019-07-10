@@ -74,10 +74,10 @@ class GoLImageRenderer:
             self.renderSettings.onColorIndex = min(max(self.renderSettings.onColorIndex + changeOnColor, 128), 255)
             self.renderSettings.offColorIndex = min(max(self.renderSettings.offColorIndex + changeOffColor, 0), 128)
 
-    def addHighlight(self, position, color):
+    def addHighlight(self, position, color, size):
         if isinstance(color, str):
             color = cm._htmlColor(color)
-        self.renderSettings.highlights.append((position, color))
+        self.renderSettings.highlights.append((position, color, size))
 
     def addText(self, position, text, color):
         if isinstance(color, str):

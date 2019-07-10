@@ -89,7 +89,7 @@ def renderImage(gol: GoL, settings: RenderSettings):
                     font, textScaling, color, 1,
                     cv2.LINE_AA)
 
-    for position, color in settings.highlights:
+    for position, color, size in settings.highlights:
         tmp1, tmp2 = position
         try:
             x1, y1 = tmp1
@@ -103,7 +103,7 @@ def renderImage(gol: GoL, settings: RenderSettings):
             y1 = int((tmp2 - yMin) * scaling)
             x2 = int((tmp1 + 1 - xMin) * scaling)
             y2 = int((tmp2 + 1 - yMin) * scaling)
-        cv2.rectangle(coloredImg, (x1, y1), (x2, y2), color, 4)
+        cv2.rectangle(coloredImg, (x1, y1), (x2, y2), color, size)
     return coloredImg
 
 
