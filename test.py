@@ -9,10 +9,28 @@ TEST_DIR = "data/tests/"
 
 
 class BoardIOTest(unittest.TestCase):
+    SMALL_SIZE = (121, 106)
+    MEDIUM_SIZE = (1500, 1751)
+    BIG_SIZE = (5829, 2962)
+
     def testNormalCharset(self):
         self.assertNotEqual(boardIO.CHAR_ON, boardIO.CHAR_OFF)
         self.assertNotEqual(boardIO.CHAR_ON, boardIO.CHAR_DELIMITER)
         self.assertNotEqual(boardIO.CHAR_OFF, boardIO.CHAR_DELIMITER)
+
+    def testLoadFileNotFound(self):
+        filename = TEST_DIR + "filenotfound"
+        self.assertRaises(FileNotFoundError, lambda: boardIO.loadBoard(filename))
+        self.assertRaises(FileNotFoundError, lambda: boardIO.loadCompressedBoard(filename))
+
+    def testInvalidChar(self):
+        filecontent = "_X\n1"
+        filename = TEST_DIR + "invalidChar.board"
+        with open(filename, "w") as d:
+            d.write(filecontent)
+
+        self.assertRaises(ValueError, lambda: boardIO.loadBoard(filename))
+
 
     def testSaveBoardNormal(self):
         dir_ = TEST_DIR + "dir/"
@@ -25,18 +43,26 @@ class BoardIOTest(unittest.TestCase):
     def testNormalRandomSmall(self):
         filename = TEST_DIR + "small.board"
 
-        originalBoard = boardIO.createRandomBoard(121, 106)
+        originalBoard = boardIO.createRandomBoard(*BoardIOTest.SMALL_SIZE)
         boardIO.saveBoard(originalBoard, filename)
         loadedBoard = boardIO.loadBoard(filename)
         self.assertTrue(boardIO.checkEquals(originalBoard, loadedBoard))
 
     def testNormalRandomMedium(self):
-        filename = TEST_DIR + "medium.board"
+        filename = TEST_DIR + "medium"
 
-        originalBoard = boardIO.createRandomBoard(1500, 1751)
+        originalBoard = boardIO.createRandomBoard(*BoardIOTest.MEDIUM_SIZE)
         boardIO.saveBoard(originalBoard, filename)
         loadedBoard = boardIO.loadBoard(filename)
         self.assertTrue(boardIO.checkEquals(originalBoard, loadedBoard))
+
+    # def testNormalRandomBig(self):
+    #     filename = TEST_DIR + "big.board"
+    #
+    #     originalBoard = boardIO.createRandomBoard(*BoardIOTest.BIG_SIZE)
+    #     boardIO.saveBoard(originalBoard, filename)
+    #     loadedBoard = boardIO.loadBoard(filename)
+    #     self.assertTrue(boardIO.checkEquals(originalBoard, loadedBoard))
 
     def testSaveBoardCompressed(self):
         dir_ = TEST_DIR + "dir/"
@@ -49,18 +75,38 @@ class BoardIOTest(unittest.TestCase):
     def testCompressedRandomSmall(self):
         filename = TEST_DIR + "small.boardC"
 
-        originalBoard = boardIO.createRandomBoard(121, 106)
+        originalBoard = boardIO.createRandomBoard(*BoardIOTest.SMALL_SIZE)
         boardIO.saveCompressedBoard(originalBoard, filename)
         loadedBoard = boardIO.loadCompressedBoard(filename)
         self.assertTrue(boardIO.checkEquals(originalBoard, loadedBoard))
 
     def testCompressedRandomMedium(self):
-        filename = TEST_DIR + "medium.boardC"
+        filename = TEST_DIR + "medium"
 
-        originalBoard = boardIO.createRandomBoard(1500, 1751)
+        originalBoard = boardIO.createRandomBoard(*BoardIOTest.MEDIUM_SIZE)
         boardIO.saveCompressedBoard(originalBoard, filename)
         loadedBoard = boardIO.loadCompressedBoard(filename)
         self.assertTrue(boardIO.checkEquals(originalBoard, loadedBoard))
+
+    # def testCompressedRandomBig(self):
+    #     filename = TEST_DIR + "big.boardC"
+    #
+    #     originalBoard = boardIO.createRandomBoard(*BoardIOTest.BIG_SIZE)
+    #     boardIO.saveCompressedBoard(originalBoard, filename)
+    #     loadedBoard = boardIO.loadCompressedBoard(filename)
+    #     self.assertTrue(boardIO.checkEquals(originalBoard, loadedBoard))
+
+    def testEmptyBoard(self):
+        board = [
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+        ]
+
+        boardTest = boardIO.emptyBoard(len(board), len(board[0]))
+        self.assertTrue(boardIO.checkEquals(board, boardTest))
 
 
 class GoLRulesTest(unittest.TestCase):

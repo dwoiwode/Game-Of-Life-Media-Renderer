@@ -51,7 +51,7 @@ class GoLPygame(GoL):
         self.boardName = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         self.drawNeighbors = False
         self.drawGridlines = True
-        self.delay = 0.1
+        self.delay = 0.00001
         self.record = False
         self.showHistory = False
         self.colorMap = colormap
