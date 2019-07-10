@@ -153,8 +153,8 @@ class GoLPygame(GoL):
     def mouseDown(self, event):
         x, y = event.pos
         if event.button in [pygame.BUTTON_WHEELDOWN, pygame.BUTTON_WHEELUP]:  # Scrolling
-            if pygame.KMOD_CTRL & pygame.key.get_mods():
-                self.zoom(event)
+            # if pygame.KMOD_CTRL & pygame.key.get_mods():
+            self.zoom(event)
         elif event.button == pygame.BUTTON_LEFT:
             self.isRunningBeforeDraw = self.simulate
             self.simulate = False
@@ -168,14 +168,14 @@ class GoLPygame(GoL):
             self.toggleManual(x, y, self.drawMode == DRAW.ADD)
 
     def mouseUP(self, event):
-        if event.button == pygame.BUTTON_RIGHT:  # Middleclick
+        if event.button == pygame.BUTTON_MIDDLE:
             self.resetDrag()
         if event.button == pygame.BUTTON_LEFT:
             self.resetDraw()
 
     def mouseMove(self, event):
         x, y = event.pos
-        if event.buttons[2]:  # Middleclick
+        if event.buttons[1]:  # Middleclick
             self.drag(x, y)
         elif event.buttons[0]:  # Leftclick
             self.toggleManual(x, y, self.drawMode == DRAW.ADD)
@@ -186,8 +186,8 @@ class GoLPygame(GoL):
     def keyUp(self, event):
         key = event.key
         c = chr(key)
-        print(c)
-        if c == "p":  # Pause
+        # print(c)
+        if c == "\r":  # Pause
             self.togglePause()
         elif c == "n":  # Toggle Numbers
             self.toggleNumberNeighbors()
@@ -199,7 +199,7 @@ class GoLPygame(GoL):
             self.drawGridlines = not self.drawGridlines
         elif c == "h":
             self.showHistory = not self.showHistory
-        elif c == "s":
+        elif c == " ":
             self.step()
             self.updateCanvas()
         elif c == "w":
@@ -234,7 +234,7 @@ class GoLPygame(GoL):
         self.camCellWidth *= 1 + (4.5 - event.button) * self.camZoomStep
         dX /= self.camCellWidth
         dY /= self.camCellWidth
-        self.camTopLeft = before[0] - dX,  before[1] - dY
+        self.camTopLeft = before[0] - dX, before[1] - dY
 
         self._updateNeighboursFont()
 
@@ -319,6 +319,12 @@ class GoLPygame(GoL):
 
 
 if __name__ == '__main__':
-    board = boardIO.loadBoard("data/boards/Rules/birth1")
-    gol = GoLPygame(initBoard=board)
+    board = boardIO.emptyBoard(100, 100)
+    # board = boardIO.loadRLE("data/boards/metapixel-on-off.rle")
+    # board = boardIO.loadRLE("data/boards/randomStill")
+    # board = boardIO.loadBoard("data/boards/10x10")
+    # board = boardIO.fromImage("data/imgs/qr_github.png",pixelPerCell=8)
+    # board = boardIO.fromImageToSpecificSize("data/imgs/qr_github2.png", size=(25, 25))
+    # board = boardIO.addBorder(board, 40)
+    gol = GoLPygame(initBoard=board, colormap=cm.COLORMAP_WHITE_GREEN)
     gol.start()
